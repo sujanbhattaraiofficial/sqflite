@@ -1,4 +1,4 @@
-package com.example.databaase
+package com.example.database
 
 import androidx.annotation.NonNull;
 import io.flutter.embedding.android.FlutterActivity

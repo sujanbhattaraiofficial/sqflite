@@ -1,6 +1,7 @@
-import 'package:databaase/databaseCreator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'databaseHelper.dart';
+import 'taskData.dart';
 
 void main() => runApp(MyApp());
 
@@ -8,23 +9,23 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: DataUi(),
+      home: DataBaseDemo(),
     );
   }
 }
 
-class DataUi extends StatefulWidget {
+class DataBaseDemo extends StatefulWidget {
   @override
-  _DataUiState createState() => _DataUiState();
+  _DataBaseDemoState createState() => _DataBaseDemoState();
 }
 
-class _DataUiState extends State<DataUi> {
-  final texteditingController = TextEditingController();
+class _DataBaseDemoState extends State<DataBaseDemo> {
+  final textEditingController = TextEditingController();
   List<TaskData> task = <TaskData>[];
-  final Todohelper todoHelper = Todohelper();
+  final DatabaseHelper databaseHelper = DatabaseHelper();
   int currentId;
-  bool isUpdating = false;
   int updateNo;
+  bool isUpdating;
   String name;
 
   @override
@@ -33,18 +34,19 @@ class _DataUiState extends State<DataUi> {
     isUpdating = false;
   }
 
-  Future<List<TaskData>> testFunction() async {
-    await todoHelper.initDatabase();
-    List<TaskData> list = await todoHelper.getAllTask();
+  Future<List<TaskData>> testTask() async {
+    await databaseHelper.initDatabase();
+    List<TaskData> list = await databaseHelper.getAllData();
     task = list;
     return task;
   }
 
   refreshList() async {
-    List<TaskData> list = await todoHelper.getAllTask();
+    List<TaskData> list = await databaseHelper.getAllData();
     setState(() {
       task = list;
     });
+
     return CircularProgressIndicator();
   }
 
@@ -57,33 +59,32 @@ class _DataUiState extends State<DataUi> {
           child: Column(
             children: <Widget>[
               TextField(
-                controller: texteditingController,
+                controller: textEditingController,
                 onChanged: (val) => name = val,
               ),
               FlatButton(
                 color: Colors.blue,
                 onPressed: () async {
                   if (isUpdating) {
-                    TaskData model = TaskData(id: updateNo, name: name);
-                    todoHelper.update(model);
-                    refreshList();
+                    TaskData data = TaskData(id: updateNo, name: name);
+                    databaseHelper.update(data);
+                    textEditingController.clear();
                     isUpdating = false;
-                    texteditingController.clear();
+                    refreshList();
                   } else {
-                    TaskData taskModel =
-                        TaskData(name: texteditingController.text);
-                    todoHelper.insertTask(taskModel);
-                    List<TaskData> list = await todoHelper.getAllTask();
+                    TaskData data = TaskData(name: textEditingController.text);
+                    databaseHelper.insertData(data);
+                    List<TaskData> list = await databaseHelper.getAllData();
                     setState(() {
                       task = list;
                       isUpdating = false;
-                      texteditingController.clear();
+                      textEditingController.clear();
                     });
                   }
                 },
-                child: !isUpdating ? Text("InsertData") : Text("Update"),
+                child: !isUpdating ? Text("Insert name") : Text("update name"),
               ),
-              listSample()
+              listSample(),
             ],
           ),
         ),
@@ -93,12 +94,12 @@ class _DataUiState extends State<DataUi> {
 
   Widget listSample() {
     return FutureBuilder<List<TaskData>>(
-      future: testFunction(),
+      future: testTask(),
       builder: (BuildContext context, AsyncSnapshot<List<TaskData>> snapshot) {
         if (snapshot.hasData) {
           return list(context);
         } else {
-          Text("Data Not found");
+          Text("Data not found");
         }
         return CircularProgressIndicator();
       },
@@ -108,35 +109,33 @@ class _DataUiState extends State<DataUi> {
   Widget list(BuildContext context) {
     return Expanded(
       child: ListView.builder(
-          shrinkWrap: true,
-          itemCount: task.length,
-          itemBuilder: (context, index) {
-            return Dismissible(
-              background: Container(
-                color: Colors.red,
-              ),
-              key: Key(task[index].id.toString()),
-              direction: DismissDirection.endToStart,
-              child: ListTile(
-                onLongPress: () {
-                  setState(() {
-                    isUpdating = true;
-                    texteditingController.text =
-                        task[index].name; // to show text initially
-                    updateNo = task[index].id; // getting id of the row
-                  });
-                },
-                leading: Text("${index + 1}"),
-                title: Text(task[index].name),
-              ),
-              onDismissed: (direction) {
-                currentId = task[index].id;
-                print("Delete No $currentId");
-                todoHelper.delete(currentId);
-                refreshList();
+        shrinkWrap: true,
+        itemCount: task.length,
+        itemBuilder: (context, index) {
+          return Dismissible(
+            background: Container(color: Colors.red[300]),
+            key: Key(task[index].id.toString()),
+            direction: DismissDirection.endToStart,
+            child: ListTile(
+              onLongPress: () {
+                setState(() {
+                  isUpdating = true;
+                  textEditingController.text = task[index].name;
+                  updateNo = task[index].id;
+                });
               },
-            );
-          }),
+              leading: Text("${index + 1}"),
+              title: Text(task[index].name),
+            ),
+            onDismissed: (direction) {
+              currentId = task[index].id;
+              print("Delete No $currentId");
+              databaseHelper.delete(currentId);
+              refreshList();
+            },
+          );
+        },
+      ),
     );
   }
 }

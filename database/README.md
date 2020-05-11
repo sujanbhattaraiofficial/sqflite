@@ -1,4 +1,4 @@
-# databaase
+# database
 
 A new Flutter project.
 
